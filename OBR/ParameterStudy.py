@@ -29,7 +29,8 @@ class Remesh(Setter):
 
     @property
     def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+        return self.enviroment_setter.base_path(
+            str(self.cells)) / self.root.case
 
 
 class ReBlockMesh(Remesh):
@@ -108,7 +109,8 @@ class PathSetter(Setter):
 
     @property
     def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+        return self.enviroment_setter.base_path(
+            str(self.cells)) / self.root.case
 
 
 def construct(
@@ -141,7 +143,13 @@ def construct(
     if executor == "MPI":
         executor_inst = MPIExecutor()
 
-    solver_setter = getattr(ms, solver)(base_path, field, case_name, solver_stubs)
+    solver_setter = getattr(
+        ms,
+        solver)(
+        base_path,
+        field,
+        case_name,
+        solver_stubs)
     try:
         # try to set domain this fails if the domain is not in the map
         # of domains which implement the given solver
@@ -168,7 +176,11 @@ class OpenFOAMTutorialCase:
         import os
 
         foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
-        return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
+        return Path(
+            foam_tutorials /
+            self.tutorial_domain /
+            self.solver /
+            self.case)
 
 
 class OpenFOAMExternalCase:

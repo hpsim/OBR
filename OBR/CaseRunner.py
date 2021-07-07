@@ -36,7 +36,8 @@ class CaseRunner:
         print("start runs processes", processes)
         for process in processes:
             try:
-                threads = case.others[0].domain.executor.enviroment_setter.set_up()
+                threads = case.others[0].domain.executor.enviroment_setter.set_up(
+                )
             except Exception as e:
                 threads = 1
                 print(e)
@@ -76,7 +77,8 @@ class CaseRunner:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    ret = check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
+                    ret = check_output(
+                        [self.of_solver], cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:
                     print(e)

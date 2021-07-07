@@ -90,7 +90,10 @@ if __name__ == "__main__":
     executor = arguments["--executor"].split(",")
     fields = arguments["--field"].split(",")
 
-    extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
+    extra_args = {
+        "OMP": {
+            "max_processes": int(
+                arguments["--omp_max_threads"])}}
 
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
@@ -146,4 +149,9 @@ if __name__ == "__main__":
     # just unpack the solver setters to a list
     matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
 
-    parameter_study(test_path, matrix_solver, runner, fields, parameter_study_arguments)
+    parameter_study(
+        test_path,
+        matrix_solver,
+        runner,
+        fields,
+        parameter_study_arguments)
