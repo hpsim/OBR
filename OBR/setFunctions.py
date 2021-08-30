@@ -4,7 +4,8 @@ from subprocess import check_output
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
+    ret = check_output(["sed", "-i", "s/" + in_reg_exp +
+                        "/" + out_reg_exp + "/g", fn])
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
@@ -54,7 +55,7 @@ def get_executor(fn, field):
     return find_in_block(fn, field, "executor", "Serial")
 
 
-def get_solver(fn, field):
+def get_matrix_solver(fn, field):
     return find_in_block(fn, field, "solver", "unknown")
 
 
@@ -104,6 +105,18 @@ def get_end_time(controlDict):
     return ret[0]
 
 
+def get_solver(controlDict):
+    return "icoFoam"
+
+
+def set_write_interval(controlDict, interval):
+    sed(
+        controlDict,
+        "^writeInterval[ ]*[0-9.]*;",
+        "writeInterval {};".format(interval),
+    )
+
+
 def set_number_of_subdomains(decomposeParDict, subDomains):
     print("setting number of subdomains", subDomains, decomposeParDict)
     sed(
@@ -114,7 +127,14 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
 
 
 def set_end_time(controlDict, endTime):
-    sed(controlDict, "endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
+    sed(controlDict, "^endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
+
+
+def get_number_of_subDomains(case):
+    import os
+
+    _, folder, _ = next(os.walk(case))
+    return len([f for f in folder if "processor" in f])
 
 
 def read_block(blockMeshDict):
@@ -140,7 +160,8 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*",
+        "writeInterval " + str(writeInterval))
 
 
 def clear_solver_settings(fvSolution, field):

@@ -13,14 +13,22 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
         super().__init__(root_dir / self.name / "base")
         self.valid = True
         self.track_args = track_args
+        self.link_mesh = True
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args):
+    def __init__(
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args):
         super().__init__(root_dir, name, track_args)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
         )
+        self.link_mesh = False
 
 
 class LinearSolverVariant(Variant):
@@ -53,9 +61,9 @@ class ReBlockMesh(MeshVariant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
-        cell_ratio = 1
+
+        cell_ratio = self.value / float(input_dict["block"].split()[0])
         self.input_dict = input_dict
-        print(input_dict)
         super().__init__(
             root_dir, name, cell_ratio, input_dict["controlDict"], track_args
         )
@@ -70,6 +78,15 @@ class ReBlockMesh(MeshVariant):
         )
         print("run blockMesh", self.path)
         check_output(["blockMesh"], cwd=self.path)
+
+        #
+        cmd = [
+            "mapFields",
+            "../../../base",
+            "-consistent",
+            "-sourceTime",
+            "latestTime"]
+        check_output(cmd, cwd=self.path)
 
 
 class ChangeMatrixSolver(Variant):
@@ -87,11 +104,12 @@ class ChangeMatrixSolver(Variant):
         self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
         self.solver_setter.executor = getattr(ms, value_dict[2])()
 
-        # check whether preconditioner and executor combinations are supported/valid
+        # check whether preconditioner and executor combinations are
+        # supported/valid
         backend = self.solver_setter.executor.backend
         if backend in self.solver_setter.avail_backend_handler.keys():
             support = self.solver_setter.avail_backend_handler[backend]
-            if not self.solver_setter.preconditioner.name in support["preconditioner"]:
+            if self.solver_setter.preconditioner.name not in support["preconditioner"]:
                 self.valid = False
         else:
             self.valid = False

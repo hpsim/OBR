@@ -47,7 +47,7 @@ class SolverSetter(Setter):
                     try:
                         attr = getattr(self, key).name
                         raw_solver_str += "{} {};".format(key, attr)
-                    except:
+                    except BaseException:
                         pass
 
             raw_solver_str = '"' + field + '.*"{ ' + raw_solver_str

@@ -29,6 +29,7 @@ from OBR import ResultsAggregator as ra
 from pathlib import Path
 import os
 import json
+import datetime
 from subprocess import check_output
 
 if __name__ == "__main__":
@@ -49,7 +50,9 @@ if __name__ == "__main__":
 
     results = ra.Results(arguments["--results_folder"], arguments["--report"])
     results.write_comment([str(metadata)])
-    for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
+    start = datetime.datetime.now()
+    for root, folder, files in os.walk(
+            Path(arguments["--folder"]).expanduser()):
 
         if arguments.get("--filter"):
             filt = arguments.get("--filter").split(",")
@@ -63,3 +66,8 @@ if __name__ == "__main__":
                 parameters_str = parameters_handle.read()
             solver_arguments = json.loads(parameters_str)
             case_runner.run(root, solver_arguments)
+    end = datetime.datetime.now()
+
+    results.write_comment(
+        ["total run time {} minutes".format((end - start).total_seconds() / 60)]
+    )

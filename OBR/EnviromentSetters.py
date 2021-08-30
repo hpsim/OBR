@@ -34,7 +34,11 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     def set_up(self):
         print("setup", self.current_state, self.processes)
         processes = self.processes[self.current_state]
-        print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
+        print(
+            "PrepareOMPMaxThreads use ",
+            self.current_state,
+            processes,
+            " threads")
         os.environ["OMP_NUM_THREADS"] = str(processes)
         self.current_state += 1
         return processes
@@ -111,13 +115,15 @@ class DecomposePar(CachePrepare):
         if meshArgs.get("number_of_subdomains", false):
             self.number_of_subdomains = [meshArgs["number_of_subdomains"]]
         else:
-           self.number_of_subdomains = list(range(meshArgs["max_subdomains"],meshArgs["subdomain_steps"]))
-
+            self.number_of_subdomains = list(
+                range(
+                    meshArgs["max_subdomains"],
+                    meshArgs["subdomain_steps"]))
 
     def set_number_of_subdomains(self):
         sf.set_number_of_subdomains(
-            self.path / "system" / "decomposeParDict", self.number_of_subdomains
-        )
+            self.path / "system" / "decomposeParDict",
+            self.number_of_subdomains)
 
     def call_decomposePar(self):
         check_output(["decomposePar"], cwd=self.path)
@@ -159,7 +165,8 @@ class CellsPrepare(CachePrepare):
         check_output(["blockMesh"], cwd=self.cache_case.path)
 
         if self.meshArgs["renumberMesh"]:
-            check_output(["renumberMesh", "-overwrite"], cwd=self.cache_case.path)
+            check_output(["renumberMesh", "-overwrite"],
+                         cwd=self.cache_case.path)
 
         # FIXME check if mpi executor
         if self.meshArgs["decomposeMesh"]:
@@ -213,7 +220,8 @@ class RefineMeshPrepare(CachePrepare):
 
         print("Refining Mesh", self.cache_case.path)
         for _ in range(self.refinements):
-            check_output(["refineMesh", "-overwrite"], cwd=self.cache_case.path)
+            check_output(["refineMesh", "-overwrite"],
+                         cwd=self.cache_case.path)
 
     def set_up_cache(self):
         self.set_up_cacheMesh()
@@ -221,8 +229,8 @@ class RefineMeshPrepare(CachePrepare):
         factor = 2 ** self.meshArgs["dimensions"]
 
         PrepareControlDict(
-            self.cache_case, max(1, self.refinements * factor), self.controlDictArgs
-        ).set_up()
+            self.cache_case, max(
+                1, self.refinements * factor), self.controlDictArgs).set_up()
 
         for field in self.fields:
             sf.clear_solver_settings(self.cache_case.fvSolution, field)

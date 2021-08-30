@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
+from . import setFunctions as sf
 
 
 class OpenFOAMCase:
@@ -40,3 +41,11 @@ class OpenFOAMCase:
     @property
     def fvSolution(self):
         return self.system_folder / "fvSolution"
+
+    @property
+    def endTime(self):
+        return sf.get_end_time(self.controlDict)
+
+    @property
+    def deltaT(self):
+        return sf.read_deltaT(self.controlDict)

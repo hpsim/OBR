@@ -11,6 +11,7 @@
         --clean             Remove existing cases [default: False].
         --parameters=<json> pass the parameters for given parameter study
         --folder=<folder>   Target folder  [default: Test].
+        --init=<ts>         Run the base case for ts timesteps [default: 100].
 """
 
 from docopt import docopt
@@ -23,7 +24,8 @@ from OBR import setFunctions as sf
 from OBR.metadata import versions
 
 
-def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
+def process_benchmark_description(
+        fn, metadata, supported_file_version="0.1.0"):
     import sys
     from packaging import version
 
@@ -62,6 +64,7 @@ if __name__ == "__main__":
         parameter_study_arguments,
         parameter_study_arguments["variation"],
         track_args,
+        arguments.get("--init", 100),
         base=getattr(co, parameter_study_arguments["case"]["type"])(
             parameter_study_arguments["case"]
         ),
