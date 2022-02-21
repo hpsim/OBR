@@ -17,6 +17,7 @@
 from docopt import docopt
 import json
 import os
+import re
 
 from pathlib import Path
 import ParameterStudyTree as ps
