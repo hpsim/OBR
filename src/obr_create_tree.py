@@ -16,12 +16,21 @@
 
 from docopt import docopt
 import json
+import os
 
 from pathlib import Path
 import ParameterStudyTree as ps
 import CaseOrigins as co
 import setFunctions as sf
 from metadata import versions
+
+
+def parse_variables(in_str, args, domain):
+
+    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+    return in_str
 
 
 def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
@@ -32,6 +41,15 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
     fn = Path(fn).expanduser()
     with open(fn, "r") as parameters_handle:
         parameters_str = parameters_handle.read()
+
+    lines = parameters_str.split("\n")
+
+    for line in lines:
+        if not line:
+            continue
+        line = parse_variables(line, os.environ, "env")
+
+    parameters_str = "\n".join(lines)
 
     # parse file
     parameter_study_arguments = json.loads(parameters_str)
