@@ -236,11 +236,13 @@ class ChangeMatrixSolverProperties(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
+        self.field = input_dict["field"]
+        self.exclude = input_dict.get("exclude", "final")
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
         sf.add_or_set_solver_settings(
-            self.fvSolution, "p", self.input_dict, self.value[0]
+            self.fvSolution, self.field, self.input_dict, self.value[0], self.exclude
         )
 
 

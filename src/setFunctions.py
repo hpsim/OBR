@@ -34,16 +34,18 @@ def clean_block_from_file(fn, block_starts, block_end, replace):
                 f.write(line)
 
 
-def read_block_from_file(fn, block_starts, block_end):
+def read_block_from_file(fn, block_starts, block_end, excludes=None):
     ret = []
     with open(fn, "r") as f:
         lines = f.readlines()
         started = False
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
+            if excludes:
+                is_excluded = [exclude in line for exclude in excludes]
             if started:
                 ret.append(line)
-            if any(is_start):
+            if any(is_start) and not any(is_excluded):
                 ret.append(line)
                 started = True
             if started and block_end in line:
@@ -173,9 +175,9 @@ def set_writeInterval(controlDict, writeInterval):
     sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
 
 
-def add_or_set_solver_settings(fvSolution, field, keyword, value):
+def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     # TODO check if keyword is already present
-    block = read_block_from_file(fvSolution, ['"' + field + '.*"{'], "}")
+    block = read_block_from_file(fvSolution, ['"' + field], "}", exclude)
     # clear_solver_settings(fvSolution, field)
     block.insert(1, "{} {};\n".format(keyword["name"], value))
     clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
