@@ -33,7 +33,11 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     def set_up(self):
         print("setup", self.current_state, self.processes)
         processes = self.processes[self.current_state]
-        print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
+        print(
+            "PrepareOMPMaxThreads use ",
+            self.current_state,
+            processes,
+            " threads")
         os.environ["OMP_NUM_THREADS"] = str(processes)
         self.current_state += 1
         return processes
@@ -93,8 +97,8 @@ class PrepareControlDict:
         if not self.controlDictArgs["stationary"]:
             requested_dT = self.controlDictArgs.get("deltaT")
             deltaT = (
-                requested_dT if requested_dT else sf.read_deltaT(self.case.controlDict)
-            )
+                requested_dT if requested_dT else sf.read_deltaT(
+                    self.case.controlDict))
             new_deltaT = deltaT / self.cell_ratio
             sf.set_deltaT(self.case.controlDict, new_deltaT)
         else:
@@ -103,7 +107,8 @@ class PrepareControlDict:
 
         sf.set_end_time(self.case.controlDict, endTime)
         # TODO dont hard code write interval
-        write_last_timeStep = self.controlDictArgs.get("write_last_timeStep", False)
+        write_last_timeStep = self.controlDictArgs.get(
+            "write_last_timeStep", False)
         lastTimeStep = timeSteps if write_last_timeStep else 10000
         sf.set_writeInterval(self.case.controlDict, lastTimeStep)
 
@@ -123,8 +128,8 @@ class DecomposePar(CachePrepare):
 
     def set_number_of_subdomains(self):
         sf.set_number_of_subdomains(
-            self.path / "system" / "decomposeParDict", self.number_of_subdomains
-        )
+            self.path / "system" / "decomposeParDict",
+            self.number_of_subdomains)
 
     def call_decomposePar(self):
         check_output(["decomposePar"], cwd=self.path)
@@ -166,7 +171,8 @@ class CellsPrepare(CachePrepare):
         check_output(["blockMesh"], cwd=self.cache_case.path)
 
         if self.meshArgs["renumberMesh"]:
-            check_output(["renumberMesh", "-overwrite"], cwd=self.cache_case.path)
+            check_output(["renumberMesh", "-overwrite"],
+                         cwd=self.cache_case.path)
 
         # FIXME check if mpi executor
         if self.meshArgs["decomposeMesh"]:
@@ -220,7 +226,8 @@ class RefineMeshPrepare(CachePrepare):
 
         print("Refining Mesh", self.cache_case.path)
         for _ in range(self.refinements):
-            check_output(["refineMesh", "-overwrite"], cwd=self.cache_case.path)
+            check_output(["refineMesh", "-overwrite"],
+                         cwd=self.cache_case.path)
 
     def set_up_cache(self):
         self.set_up_cacheMesh()
@@ -228,8 +235,8 @@ class RefineMeshPrepare(CachePrepare):
         factor = 2 ** self.meshArgs["dimensions"]
 
         PrepareControlDict(
-            self.cache_case, max(1, self.refinements * factor), self.controlDictArgs
-        ).set_up()
+            self.cache_case, max(
+                1, self.refinements * factor), self.controlDictArgs).set_up()
 
         for field in self.fields:
             sf.clear_solver_settings(self.cache_case.fvSolution, field)

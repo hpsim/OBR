@@ -25,8 +25,13 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
 
 class MeshVariant(Variant):
     def __init__(
-        self, root_dir, name, cell_ratio, controlDictArgs, track_args, variant_of
-    ):
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args,
+            variant_of):
         super().__init__(root_dir, name, track_args, variant_of)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
@@ -63,7 +68,7 @@ class ExistingCaseVariants(Variant):
             for step in self.build:
                 try:
                     print(check_output(step.split(" "), cwd=self.path))
-                except:
+                except BaseException:
                     pass
 
 
@@ -215,7 +220,8 @@ class ChangeMatrixSolver(Variant):
             self.valid = False
         field = input_dict["fields"][0]
         self.track_args["case_parameter"]["solver_" + field] = self.value[0]
-        self.track_args["case_parameter"]["preconditioner_" + field] = self.value[1]
+        self.track_args["case_parameter"]["preconditioner_" +
+                                          field] = self.value[1]
         self.track_args["case_parameter"]["executor_" + field] = self.value[2]
 
     def set_up(self):
@@ -242,8 +248,11 @@ class ChangeMatrixSolverProperties(Variant):
 
     def set_up(self):
         sf.add_or_set_solver_settings(
-            self.fvSolution, self.field, self.input_dict, self.value[0], self.exclude
-        )
+            self.fvSolution,
+            self.field,
+            self.input_dict,
+            self.value[0],
+            self.exclude)
 
 
 class ChangeNumberOfSubdomains(Variant):

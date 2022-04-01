@@ -176,7 +176,8 @@ class CaseRunner:
             #         case.path, ret, solver, self.results.log_fold
             #     )
 
-            log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
+            log_hash = self.hash_and_store_log(
+                ret, case.path, self.results.log_fold)
 
             self.results.add(
                 timestamp=str(datetime.datetime.utcnow()),
