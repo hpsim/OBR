@@ -15,8 +15,13 @@ class ParameterStudyTree:
     """class to construct the file system tree of the cases"""
 
     def __init__(
-        self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
-    ):
+            self,
+            root_dir,
+            root_dict,
+            input_dict,
+            track_args,
+            parent=None,
+            base=None):
         """parent = the part of the tree above
 
         base = the base case on which the tree is based
@@ -33,11 +38,15 @@ class ParameterStudyTree:
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(variants, self.variation_type)(
-                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
-            )
-            for variant_dict in product(*input_dict["variants"].values())
-        ]
+            getattr(
+                variants,
+                self.variation_type)(
+                self.variation_dir,
+                self.input_dict,
+                variant_dict,
+                deepcopy(track_args)) for variant_dict in product(
+                *
+                input_dict["variants"].values())]
 
         self.cases = [case for case in self.cases if case.valid]
 
@@ -93,7 +102,7 @@ class ParameterStudyTree:
 
             _, _, files = next(os.walk(case.path / base_path))
             for f in files:
-                if not "All" in f:
+                if "All" not in f:
                     continue
                 cmd = ["cp", "-r", base_path / f, "."]
                 check_output(cmd, cwd=case.path)
@@ -133,7 +142,11 @@ class ParameterStudyTree:
         # execute build command
         if hasattr(self.base, "build"):
             for step in self.base.build:
-                print(check_output(step.split(" "), cwd=self.root_dir / "base"))
+                print(
+                    check_output(
+                        step.split(" "),
+                        cwd=self.root_dir /
+                        "base"))
 
         # We can use a with statement to ensure threads are cleaned up promptly
         import concurrent.futures

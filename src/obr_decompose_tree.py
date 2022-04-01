@@ -17,8 +17,12 @@ def can_be_symlinked(path):
     _, dirs, _ = next(os.walk(variation_root))
     for d in dirs:
         variation = (
-            variation_root / d / "Variation_mpiRank" / num_procs / "base" / "processor0"
-        )
+            variation_root /
+            d /
+            "Variation_mpiRank" /
+            num_procs /
+            "base" /
+            "processor0")
         if variation.exists():
             return variation.parents[0].resolve()
     return False
@@ -63,7 +67,7 @@ def decompose_tree(arguments):
             filt = [f in root for f in filt]
             if not all(filt):
                 continue
-        if not "mpiRank" in root:
+        if "mpiRank" not in root:
             continue
         if "obr.json" in files:
             symlink_base = can_be_symlinked(root)

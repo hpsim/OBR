@@ -172,15 +172,22 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*",
+        "writeInterval " + str(writeInterval))
 
 
-def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
+def add_or_set_solver_settings(
+        fvSolution,
+        field,
+        keyword,
+        value,
+        exclude=None):
     # TODO check if keyword is already present
     block = read_block_from_file(fvSolution, ['"' + field], "}", exclude)
     # clear_solver_settings(fvSolution, field)
     block.insert(1, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
+    clean_block_from_file(
+        fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
 
 
 def clear_solver_settings(fvSolution, field):
