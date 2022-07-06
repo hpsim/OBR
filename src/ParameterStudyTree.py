@@ -14,10 +14,13 @@ import asyncio
 import os
 import re
 
-# TODO this is redundant since it should have been already parsed in obr_create_tree
+# TODO this is redundant since it should have been already parsed in
+# obr_create_tree
+
+
 def parse_variables_impl(in_str, args, domain):
     in_str = str(in_str)
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", str(args.get(inst, ""))
@@ -33,8 +36,13 @@ class ParameterStudyTree:
     """class to construct the file system tree of the cases"""
 
     def __init__(
-        self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
-    ):
+            self,
+            root_dir,
+            root_dict,
+            input_dict,
+            track_args,
+            parent=None,
+            base=None):
         """parent = the part of the tree above
 
         base = the base case on which the tree is based
@@ -54,22 +62,31 @@ class ParameterStudyTree:
         if not (input_dict["variants"][key]):
             print("[OBR] generate variants")
             start = int(
-                parse_variables(input_dict["variants_generator"].get("start", "1"))
-            )
-            end = int(parse_variables(input_dict["variants_generator"].get("end", "1")))
+                parse_variables(
+                    input_dict["variants_generator"].get(
+                        "start", "1")))
+            end = int(
+                parse_variables(
+                    input_dict["variants_generator"].get(
+                        "end", "1")))
             step = int(
-                parse_variables(input_dict["variants_generator"].get("step", "1"))
-            )
+                parse_variables(
+                    input_dict["variants_generator"].get(
+                        "step", "1")))
             input_dict["variants"][key] = list(range(start, end + 1, step))
 
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(variants, self.variation_type)(
-                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
-            )
-            for variant_dict in product(*input_dict["variants"].values())
-        ]
+            getattr(
+                variants,
+                self.variation_type)(
+                self.variation_dir,
+                self.input_dict,
+                variant_dict,
+                deepcopy(track_args)) for variant_dict in product(
+                *
+                input_dict["variants"].values())]
 
         # only add cases which are valid, eg some combinations of executor
         # and preconditioner might not exist
@@ -134,7 +151,7 @@ class ParameterStudyTree:
 
             _, _, files = next(os.walk(case.path / base_path))
             for f in files:
-                if not "All" in f:
+                if "All" not in f:
                     continue
                 cmd = ["cp", "-r", base_path / f, "."]
                 check_output(cmd, cwd=case.path)
@@ -176,8 +193,9 @@ class ParameterStudyTree:
         if hasattr(self.base, "build"):
             for step in self.base.build:
                 process = subprocess.Popen(
-                    step.split(" "), cwd=self.root_dir / "base", stdout=subprocess.PIPE
-                )
+                    step.split(" "),
+                    cwd=self.root_dir / "base",
+                    stdout=subprocess.PIPE)
                 for c in iter(lambda: process.stdout.read(1), b""):
                     sys.stdout.buffer.write(c)
 

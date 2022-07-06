@@ -27,8 +27,13 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
 
 class MeshVariant(Variant):
     def __init__(
-        self, root_dir, name, cell_ratio, controlDictArgs, track_args, variant_of
-    ):
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args,
+            variant_of):
         super().__init__(root_dir, name, track_args, variant_of)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
@@ -68,7 +73,7 @@ class ExistingCaseVariants(Variant):
                 try:
                     print(step.split(" "))
                     print(check_output(step.split(" "), cwd=self.path))
-                except:
+                except BaseException:
                     print(step, "failed")
                     pass
 
@@ -172,7 +177,10 @@ class ReBlockMesh(MeshVariant):
             "{x} {x} {x}".format(x=str(self.value)),
         )
         print("[OBR] run blockMesh", self.path)
-        process = subprocess.Popen(["blockMesh"], cwd=self.path, stdout=subprocess.PIPE)
+        process = subprocess.Popen(
+            ["blockMesh"],
+            cwd=self.path,
+            stdout=subprocess.PIPE)
         marker = str.encode("#")
         with open(self.path / "blockMesh.log", "w") as log_handle:
             for c in iter(lambda: process.stdout.read(1), b""):
@@ -205,7 +213,8 @@ class ChangeMatrixSolver(Variant):
         preconditioner = value_dict[1]
         executor = input_dict["variants"]["backend"][value_dict[2]][0]
         backend_name = value_dict[2]
-        name = "{}_{}_{}_{}".format(solver, preconditioner, backend_name, executor)
+        name = "{}_{}_{}_{}".format(
+            solver, preconditioner, backend_name, executor)
         super().__init__(
             root_dir,
             name,
@@ -232,7 +241,8 @@ class ChangeMatrixSolver(Variant):
         # supported/valid
         self.valid = backend.is_valid()
         self.track_args["case_parameter"]["solver_" + fields] = solver
-        self.track_args["case_parameter"]["preconditioner_" + fields] = preconditioner
+        self.track_args["case_parameter"]["preconditioner_" +
+                                          fields] = preconditioner
         self.track_args["case_parameter"]["backend_" + fields] = backend_name
         self.track_args["case_parameter"]["executor_" + fields] = executor
 
@@ -262,8 +272,11 @@ class ChangeMatrixSolverProperties(Variant):
     def set_up(self):
         print("[OBR] add or set linear solver settings", self.path)
         sf.add_or_set_solver_settings(
-            self.fvSolution, self.field, self.input_dict, self.value[0], self.exclude
-        )
+            self.fvSolution,
+            self.field,
+            self.input_dict,
+            self.value[0],
+            self.exclude)
 
 
 class ChangeNumberOfSubdomains(Variant):
@@ -296,6 +309,8 @@ class ChangeNumberOfSubdomains(Variant):
             self.number_cores,
         )
         if self.method_ == "scotch":
-            sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
+            sf.set_number_of_subdomains(
+                self.decomposeParDict, self.number_cores)
         if self.method_ == "simple":
-            sf.set_number_of_subdomains_simple(self.decomposeParDict, self.number_cores)
+            sf.set_number_of_subdomains_simple(
+                self.decomposeParDict, self.number_cores)

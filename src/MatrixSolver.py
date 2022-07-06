@@ -21,7 +21,8 @@ class SolverSetter(Setter):
             raw_solver_str = self.backend.emit_solver_dict()
 
             sf.clear_solver_settings(self.fvSolution, field)
-            sf.set_block(self.fvSolution, field + "{", "}", raw_solver_str, ["Final"])
+            sf.set_block(self.fvSolution, field +
+                         "{", "}", raw_solver_str, ["Final"])
 
 
 class Backend:
@@ -73,9 +74,8 @@ class PETSC(Backend):
         )
         import PETSC.solver as petscsolver
 
-        self.solver = (
-            getattr(petscsolver, solver)() if solver in dir(petscsolver) else None
-        )
+        self.solver = (getattr(petscsolver, solver)()
+                       if solver in dir(petscsolver) else None)
 
         self.preconditioner = (
             getattr(petscsolver, preconditioner)()
@@ -124,7 +124,8 @@ class Ginkgo(Backend):
         )
         import Ginkgo.solver as gkosolver
 
-        self.solver = getattr(gkosolver, solver)() if solver in dir(gkosolver) else None
+        self.solver = getattr(gkosolver, solver)(
+        ) if solver in dir(gkosolver) else None
 
         self.preconditioner = (
             getattr(gkosolver, preconditioner)()
@@ -132,9 +133,8 @@ class Ginkgo(Backend):
             else None
         )
 
-        self.executor = (
-            getattr(gkosolver, executor)() if executor in dir(gkosolver) else None
-        )
+        self.executor = (getattr(gkosolver, executor)()
+                         if executor in dir(gkosolver) else None)
 
         if (not self.solver) or (not self.preconditioner) or (not self.executor):
             self.valid_ = False
@@ -177,7 +177,8 @@ class OpenFOAM(Backend):
         )
         import OpenFOAM.solver as ofsolver
 
-        self.solver = getattr(ofsolver, solver)() if solver in dir(ofsolver) else None
+        self.solver = getattr(ofsolver, solver)(
+        ) if solver in dir(ofsolver) else None
 
         self.preconditioner = (
             getattr(ofsolver, preconditioner)()
@@ -185,9 +186,8 @@ class OpenFOAM(Backend):
             else None
         )
 
-        self.executor = (
-            getattr(ofsolver, executor)() if executor in dir(ofsolver) else None
-        )
+        self.executor = (getattr(ofsolver, executor)()
+                         if executor in dir(ofsolver) else None)
 
         if (not self.solver) or (not self.preconditioner):
             self.valid_ = False

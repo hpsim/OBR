@@ -64,7 +64,7 @@ def decompose_tree(arguments):
             filt = [f in root for f in filt]
             if not all(filt):
                 continue
-        if not "mpiRank" in root:
+        if "mpiRank" not in root:
             continue
         if "obr.json" in files:
             symlink_base = can_be_symlinked(root)

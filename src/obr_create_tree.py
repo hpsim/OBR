@@ -28,13 +28,18 @@ from metadata import versions
 
 
 def parse_variables(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}",
+            args.get(
+                inst,
+                ""))
     return in_str
 
 
-def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
+def process_benchmark_description(
+        fn, metadata, supported_file_version="0.3.0"):
     import sys
     from packaging import version
 
