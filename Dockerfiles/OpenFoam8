@@ -1,0 +1,32 @@
+FROM ubuntu:20.04
+
+RUN mkdir -p /opt/OpenFOAM
+
+RUN apt-get update
+RUN apt-get upgrade
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt install -y \
+        git \
+        build-essential \
+        flex bison cmake zlib1g-dev \
+        libopenmpi-dev openmpi-bin gnuplot libreadline-dev libncurses-dev libxt-dev \
+        libscotch-dev libcgal-dev python python-dev
+
+WORKDIR /opt/OpenFOAM
+RUN git clone https://github.com/OpenFOAM/ThirdParty-8.git
+RUN git clone https://github.com/greole/OpenFOAM-8.git
+
+SHELL ["/bin/bash", "-c"]
+
+RUN source /opt/OpenFOAM/OpenFOAM-8/etc/bashrc \
+    && cd /opt/OpenFOAM/ThirdParty-8 \
+    && ./Allwmake -j \
+    && cd /opt/OpenFOAM/OpenFOAM-8 \
+    && ./Allwmake -j
+
+
+RUN mkdir -p /opt/ginkgo
+WORKDIR /opt/ginkgo
+RUN git clone https://github.com/OpenFOAM/ThirdParty-8.git
+
+
