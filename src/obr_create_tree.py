@@ -16,21 +16,47 @@
 
 from docopt import docopt
 import json
+import os
+import re
+import sys
 
 from pathlib import Path
-from OBR import ParameterStudyTree as ps
-from OBR import CaseOrigins as co
-from OBR import setFunctions as sf
-from OBR.metadata import versions
+import ParameterStudyTree as ps
+import CaseOrigins as co
+import setFunctions as sf
+from metadata import versions
 
 
-def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
+def parse_variables(in_str, args, domain):
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}",
+            args.get(
+                inst,
+                ""))
+    return in_str
+
+
+def process_benchmark_description(
+        fn, metadata, supported_file_version="0.3.0"):
     import sys
     from packaging import version
 
     # read benchmark description file
+    fn = Path(fn).expanduser()
     with open(fn, "r") as parameters_handle:
         parameters_str = parameters_handle.read()
+
+    lines = parameters_str.split("\n")
+    cleaned = []
+
+    for line in lines:
+        if not line:
+            continue
+        cleaned.append(parse_variables(line, os.environ, "env"))
+
+    parameters_str = "\n".join(cleaned)
 
     # parse file
     parameter_study_arguments = json.loads(parameters_str)
@@ -47,19 +73,21 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
     return parameter_study_arguments
 
 
-if __name__ == "__main__":
-    metadata = versions
+def obr_create_tree(arguments):
 
-    arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
+    if not os.environ.get("FOAM_ETC"):
+        print("[OBR] Error OpenFOAM not sourced")
+        sys.exit(-1)
 
     parameter_study_arguments = process_benchmark_description(
-        arguments.get("--parameters", "benchmark.json"), metadata
+        arguments.get("parameters", "benchmark.json"), versions
     )
+    parameter_study_arguments["cli"] = arguments
 
     track_args = {"case_parameter": {"resolution": 0, "processes": 1}}
 
     pst = ps.ParameterStudyTree(
-        Path(arguments["--folder"]),
+        Path(arguments["folder"]),
         parameter_study_arguments,
         parameter_study_arguments["variation"],
         track_args,

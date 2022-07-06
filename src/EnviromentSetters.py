@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-import OBR.setFunctions as sf
-from OBR.OpenFOAMCase import OpenFOAMCase
+import setFunctions as sf
+from OpenFOAMCase import OpenFOAMCase
 import os
 from subprocess import check_output
 
@@ -47,16 +47,16 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
 
 
 class CachePrepare(DefaultPrepareEnviroment):
-    """ copies cases from a base """
+    """copies cases from a base"""
 
     def __init__(self, path):
-        """ prepare a cache folder for the target folder in path """
+        """prepare a cache folder for the target folder in path"""
         self.path = path
         self.alternative_cache_path_ = None
 
     @property
     def cache_path(self):
-        """ append cache to the current path name """
+        """append cache to the current path name"""
         path = self.path
         if self.alternative_cache_path_:
             path = self.alternative_cache_path_
@@ -81,21 +81,24 @@ class CachePrepare(DefaultPrepareEnviroment):
 
 
 class PrepareControlDict:
-    """ prepares the control dict of a case """
+    """prepares the control dict of a case"""
 
     def __init__(self, case, cell_ratio, controlDictArgs):
-        """ cell_ratio """
+        """cell_ratio"""
         self.case = case
         self.cell_ratio = cell_ratio
         self.controlDictArgs = controlDictArgs
 
     def set_up(self):
-        sf.add_libOGL_so(self.case.controlDict)
+        sf.add_libs(self.case.controlDict, self.controlDictArgs["libs"])
 
         timeSteps = self.controlDictArgs["timeSteps"]
         # adapt deltaT for instationary cases
         if not self.controlDictArgs["stationary"]:
-            deltaT = sf.read_deltaT(self.case.controlDict)
+            requested_dT = self.controlDictArgs.get("deltaT")
+            deltaT = (
+                requested_dT if requested_dT else sf.read_deltaT(
+                    self.case.controlDict))
             new_deltaT = deltaT / self.cell_ratio
             sf.set_deltaT(self.case.controlDict, new_deltaT)
         else:
@@ -138,7 +141,7 @@ class DecomposePar(CachePrepare):
 
 
 class CellsPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     # TODO factor clearing solvers to separate classes
 
@@ -164,7 +167,7 @@ class CellsPrepare(CachePrepare):
         self.cell_ratio = float(self.cells) / orig_cells[0]
         sf.set_cells(self.cache_case.blockMeshDict, orig_cells_str, new_cells)
 
-        print("Meshing", self.cache_case.path)
+        print("[OBR] Meshing", self.cache_case.path)
         check_output(["blockMesh"], cwd=self.cache_case.path)
 
         if self.meshArgs["renumberMesh"]:
@@ -196,7 +199,7 @@ class CellsPrepare(CachePrepare):
             self.set_up_cache()
 
         # check if cache_path exists otherwise copy
-        print("copying from", self.cache_path, " to ", target_path)
+        print("[OBR] copying from", self.cache_path, " to ", target_path)
         sf.ensure_path(target_path)
         check_output(["cp", "-r", self.cache_path, target_path])
 
@@ -205,7 +208,7 @@ class CellsPrepare(CachePrepare):
 
 
 class RefineMeshPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     # TODO factor clearing solvers to separate classes
 
@@ -243,7 +246,7 @@ class RefineMeshPrepare(CachePrepare):
 
 
 class PathPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     def __init__(self, path, fields):
         super().__init__(path=path)

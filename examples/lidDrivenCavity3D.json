@@ -11,24 +11,15 @@
     "git": "https://develop.openfoam.com/committees/hpc.git"
   },
   "variation": {
-    "name": "init",
-    "type": "InitCase",
-    "variants": {"timeSteps": [100]},
-    "blockMesh": true,
-    "controlDict": {
-      "stationary": false,
-      "timeSteps": 20
-    },
-    "variation": [{
       "name": "mesh",
       "type": "ReBlockMesh",
-      "mapFields": true,
+      "mapFields": false,
       "dimensions": 3,
-      "variants":{"cells": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]},
+      "variants":{"cells": [100,  200, 300, 400, 500]},
       "block": "100 100 100",
       "controlDict": {
         "stationary": false,
-        "timeSteps": 10
+        "timeSteps": 3
       },
       "variation": [{
         "name": "matrix_solver",
@@ -37,7 +28,7 @@
         "defaults": {
           "p" : {
             "minIter": 0,
-            "maxIter": 3000,
+            "maxIter": 10000,
             "smoother": "none",
             "relTol":  0.0,
             "tolerance":  1e-06,
@@ -46,35 +37,18 @@
             "verbose": "no",
             "inner": "{solver CG; maxIter 1000;frequency 10;}"
             }
-          },
+        },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
-                     "preconditioner":["NoPrecond", "BJ", "DIC", "IC", "ILU"],
-                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "DefaultOF"]},
-        "variation": [
-          {
-          "name": "maxBlockSize",
-          "type": "ChangeMatrixSolverProperties",
-          "field": "p",
-          "variants": { "maxBlockSize": [1 ,2 ,4 ,8 ,16] },
-          "variant_of": ["CG_BJ"],
-          "comment": "creates a subvariation of the CG BJ cases for different max block size values"
-            },
-          {
-          "name": "mpiRank",
-          "type": "ChangeNumberOfSubdomains",
-          "variants": { "numberOfSubdomains": [2 ,4 ,8 ,16, 32, 36, 40] },
-          "variant_of": ["MPI"],
-          "comment": "creates a subvariation of the CG BJ cases for different max block size values"
-            },
-                      {
-          "name": "innerReductionFactor",
-          "type": "ChangeMatrixSolverProperties",
-          "field": "p",
-          "variants": { "innerReductionFactor": [0.1 ,0.05 , 0.01 ,0.05 , 0.001]},
-          "variant_of": ["IR"],
-          "comment": "creates a subvariation of the CG BJ cases for different max block size values"
-        }]
-        }]
+                     "preconditioner": ["NoPrecond", "DIC", "ILU"],
+                     "executor": ["HIP", "OMP", "MPI"]
+	},
+        "variation": [{
+             "name": "mpiRank",
+             "type": "ChangeNumberOfSubdomains",
+             "variants": { "numberOfSubdomains": [32, 40] },
+             "variant_of": ["MPI"],
+             "comment": "creates a subvariation of the CG BJ cases for different max block size values"
+          }]
       }]
-    }
   }
+}

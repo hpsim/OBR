@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from OBR import setFunctions as sf
+import setFunctions as sf
 from subprocess import check_output
 import os
 
 
 class Results:
-    """ A class to collect results and write to a csv file """
+    """A class to collect results and write to a csv file"""
 
     def __init__(self, fold, fn):
         self.fn = Path(fold) / fn
@@ -37,7 +37,7 @@ class Results:
         current["mpi_ranks"] = sf.get_number_of_subDomains(case.path)
 
     def add(self, **kwargs):
-        """ Add results and success status of a run and write to file """
+        """Add results and success status of a run and write to file"""
         self.current_col_vals[-1].update(kwargs)
         self.write_to_disk()
 
@@ -55,15 +55,9 @@ class Results:
             ]
 
             default_data_columns = [
+                "timestamp",
                 "log_id",
-                "setup_time",
                 "run_time",
-                "number_iterations_p",
-                "number_iterations_U",
-                "init_linear_solve_p",
-                "linear_solve_p",
-                "init_linear_solve_U",
-                "linear_solve_U",
             ]
 
             header = []
@@ -83,7 +77,7 @@ class Results:
 
             data = []
             for vals in self.current_col_vals:
-                data.append([vals.get(key, "None") for key in default_header])
+                data.append([vals.get(key, 0) for key in default_header])
 
             report_handle.write(",".join(default_header) + "\n")
             report_handle.write("".join(self.comments))
@@ -91,4 +85,4 @@ class Results:
             for d in data:
                 report_handle.write(",".join(map(str, d)) + "\n")
 
-            print("writing to report", data[-1])
+            print("[OBR] writing to report", data[-1])
