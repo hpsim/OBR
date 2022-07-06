@@ -1,16 +1,19 @@
 # #!/usr/bin/env python3
-from OBR.OpenFOAMCase import OpenFOAMCase
+from OpenFOAMCase import OpenFOAMCase
+import subprocess
+import sys
 from subprocess import check_output
-from . import MatrixSolver as ms
-from . import EnviromentSetters as es
-from .OpenFOAMCase import OpenFOAMCase
-from . import setFunctions as sf
+import multiprocessing
+import MatrixSolver as ms
+import EnviromentSetters as es
+import setFunctions as sf
 
 
 class Variant(OpenFOAMCase):  # At some point this inherits from Setter
     def __init__(self, root_dir, name, track_args, variant_of):
         self.name = name
         super().__init__(root_dir / self.name / "base")
+        self.base = "../../../base"
         if variant_of:
             self.valid = False
             for variant in variant_of:
@@ -23,28 +26,68 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args,
-                 variant_of):
+    def __init__(
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args,
+            variant_of):
         super().__init__(root_dir, name, track_args, variant_of)
         self.prepare_controlDict = es.PrepareControlDict(
-            self, cell_ratio, controlDictArgs)
+            self, cell_ratio, controlDictArgs
+        )
         self.link_mesh = False
         self.map_fields = True
 
 
-# class LinearSolverVariant(Variant):
-#     def __init__(self, root_dir, name, track_args, _of):
-#         super().__init__(root_dir, name, track_args, varaint_of)
+class ExistingCaseVariants(Variant):
+    def __init__(self, root_dir, input_dict, value_dict, track_args):
+        self.value = value_dict[0][1]
+        name = str(self.value)
+        self.build = input_dict.get("build", False)
+        self.prepare_controlDict = es.PrepareControlDict(
+            self, 1, input_dict["controlDict"]
+        )
+        super().__init__(
+            root_dir,
+            name,
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
+        )
+        self.track_args["case_parameter"]["resolution"] = self.value
+        self.link_mesh = False
+        self.map_fields = False
+        self.base = "../../../base/" + value_dict[0][0]
+        print("base", self.base)
+        print("value", self.value)
+
+    def set_up(self):
+        self.prepare_controlDict.set_up()
+
+        # execute build command
+        print("track args", self.track_args)
+        if self.build:
+            for step in self.build:
+                try:
+                    print(step.split(" "))
+                    print(check_output(step.split(" "), cwd=self.path))
+                except BaseException:
+                    print(step, "failed")
+                    pass
 
 
 class InitCase(Variant):
-    """ class that calls refineMesh several times """
+    """class that calls refineMesh several times"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         input_dict["controlDict"]["write_last_timeStep"] = True
         self.blockMesh = input_dict.get("blockMesh")
         self.prepare_controlDict = es.PrepareControlDict(
-            self, 1, input_dict["controlDict"])
+            self, 1, input_dict["controlDict"]
+        )
         name = str(self.value)
         super().__init__(
             root_dir,
@@ -62,20 +105,21 @@ class InitCase(Variant):
         if self.blockMesh:
             cmd = ["blockMesh"]
 
-            print("running blockMesh for initial run")
+            print("[OBR] running blockMesh for initial run")
             check_output(cmd, cwd=self.path)
 
         cmd = sf.get_application_solver(self.controlDict)
-        print("running initial case")
+        print("[OBR] running initial case")
         check_output(cmd, cwd=self.path)
 
 
 class RefineMesh(MeshVariant):
-    """ class that calls refineMesh several times """
+    """class that calls refineMesh several times"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
-        cell_ratio = 4**self.value
+        cell_ratio = 4 ** self.value
         self.link_mesh = False
         self.map_fields = True
         super().__init__(
@@ -107,7 +151,8 @@ class RefineMesh(MeshVariant):
 
 
 class ReBlockMesh(MeshVariant):
-    """ class to set cells and  calls blockMesh  """
+    """class to set cells and  calls blockMesh"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
@@ -131,11 +176,18 @@ class ReBlockMesh(MeshVariant):
             self.input_dict["block"],
             "{x} {x} {x}".format(x=str(self.value)),
         )
-        print("run blockMesh", self.path)
-        check_output(["blockMesh"], cwd=self.path)
+        print("[OBR] run blockMesh", self.path)
+        process = subprocess.Popen(
+            ["blockMesh"],
+            cwd=self.path,
+            stdout=subprocess.PIPE)
+        marker = str.encode("#")
+        with open(self.path / "blockMesh.log", "w") as log_handle:
+            for c in iter(lambda: process.stdout.read(1), b""):
+                sys.stdout.buffer.write(marker)
+                log_handle.write(c.decode("utf-8"))
 
         # TODO check if mapFields is requested
-
         if self.input_dict["mapFields"]:
             cmd = [
                 "mapFields",
@@ -144,21 +196,25 @@ class ReBlockMesh(MeshVariant):
                 "-sourceTime",
                 "latestTime",
             ]
-            print("mapping field")
+            print("[OBR] mapping field", self.path)
         else:
-            print("copying zero folder")
-            cmd = [
-                "cp", "-r", "../../../base/0", "."
-                ]
+            print("[OBR] copying zero folder", self.path)
+            cmd = ["cp", "-r", "../../../base/0", "."]
 
         check_output(cmd, cwd=self.path)
 
 
 class ChangeMatrixSolver(Variant):
-    """ class that calls refineMesh several times """
+    """class that calls refineMesh several times"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        name = str("_".join(self.value))
+        solver = value_dict[0]
+        preconditioner = value_dict[1]
+        executor = input_dict["variants"]["backend"][value_dict[2]][0]
+        backend_name = value_dict[2]
+        name = "{}_{}_{}_{}".format(
+            solver, preconditioner, backend_name, executor)
         super().__init__(
             root_dir,
             name,
@@ -166,34 +222,39 @@ class ChangeMatrixSolver(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
-        self.solver_setter = getattr(ms, value_dict[0])(self.path,
-                                                        input_dict["fields"],
-                                                        input_dict["defaults"])
-        self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
-        self.solver_setter.executor = getattr(ms, value_dict[2])()
+        fields = input_dict["fields"][0]
+        defaults = input_dict.get("defaults")[fields]
+        # eg CG, BiCGStab
+        print(value_dict, input_dict["variants"])
+
+        # eg, GKO, DefaultOF, PETSC
+        backend = getattr(ms, backend_name)(
+            solver=solver,
+            preconditioner=preconditioner,
+            executor=executor,
+            options=defaults,
+        )
+
+        self.setter = ms.SolverSetter(backend, self.path, fields, defaults)
+
         # check whether preconditioner and executor combinations are
         # supported/valid
-        backend = self.solver_setter.executor.backend
-        if backend in self.solver_setter.avail_backend_handler.keys():
-            support = self.solver_setter.avail_backend_handler[backend]
-            if self.solver_setter.preconditioner.name not in support[
-                    "preconditioner"]:
-                self.valid = False
-        else:
-            self.valid = False
-        field = input_dict["fields"][0]
-        self.track_args["case_parameter"]["solver_" + field] = self.value[0]
-        self.track_args["case_parameter"][
-                "preconditioner_" + field] = self.value[1]
-        self.track_args["case_parameter"]["executor_" + field] = self.value[2]
+        self.valid = backend.is_valid()
+        self.track_args["case_parameter"]["solver_" + fields] = solver
+        self.track_args["case_parameter"]["preconditioner_" +
+                                          fields] = preconditioner
+        self.track_args["case_parameter"]["backend_" + fields] = backend_name
+        self.track_args["case_parameter"]["executor_" + fields] = executor
 
     def set_up(self):
-        self.solver_setter.set_up()
+        print("[OBR] change linear solver", self.path)
+        self.setter.set_up()
 
 
 # TODO this is a lot of duplicated boilerplate
 class ChangeMatrixSolverProperties(Variant):
-    """ class that calls refineMesh several times """
+    """class that calls refineMesh several times"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
         name = str(self.value[0])
@@ -204,18 +265,33 @@ class ChangeMatrixSolverProperties(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
+        self.field = input_dict["field"] + "\n"
+        self.exclude = input_dict.get("exclude", ["Final"])
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        sf.add_or_set_solver_settings(self.fvSolution, "p", self.input_dict,
-                                      self.value[0])
+        print("[OBR] add or set linear solver settings", self.path)
+        sf.add_or_set_solver_settings(
+            self.fvSolution,
+            self.field,
+            self.input_dict,
+            self.value[0],
+            self.exclude)
 
 
 class ChangeNumberOfSubdomains(Variant):
-    """ class that calls refineMesh several times """
+    """class that calls refineMesh several times"""
+
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        name = str(self.value[0])
+        multiplier = int(input_dict.get("multiplier", 1))
+        self.method_ = input_dict.get("method", "scotch")
+        self.number_cores = int(self.value[0] * multiplier)
+
+        if isinstance(self.number_cores, str):
+            if self.number_cores == "fullNode":
+                self.number_cores = int(multiprocessing.cpu_count() / 2)
+        name = str(self.number_cores)
         super().__init__(
             root_dir,
             name,
@@ -226,4 +302,15 @@ class ChangeNumberOfSubdomains(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        sf.set_number_of_subdomains(self.decomposeParDict, self.value[0])
+        print(
+            "[OBR] change domain decompositon",
+            self.path,
+            self.method_,
+            self.number_cores,
+        )
+        if self.method_ == "scotch":
+            sf.set_number_of_subdomains(
+                self.decomposeParDict, self.number_cores)
+        if self.method_ == "simple":
+            sf.set_number_of_subdomains_simple(
+                self.decomposeParDict, self.number_cores)

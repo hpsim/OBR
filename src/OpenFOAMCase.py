@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from . import setFunctions as sf
+import setFunctions as sf
 
 
 class OpenFOAMCase:
-    """ A class for simple access to typical OpenFOAM files"""
+    """A class for simple access to typical OpenFOAM files"""
+
     def __init__(self, path):
         self.path_ = Path(path)
 
