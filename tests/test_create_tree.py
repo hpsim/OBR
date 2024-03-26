@@ -10,6 +10,7 @@ from obr.create_tree import (
     extract_from_operation,
     expand_generator_block,
 )
+from obr.core.core import map_view_folder_to_job_id
 from obr.signac_wrapper.operations import OpenFOAMProject
 
 
@@ -37,7 +38,7 @@ def emit_test_config():
                     }
                 },
             ],
-        },
+        }
     }
 
 
@@ -202,3 +203,28 @@ def test_cache_folder(tmpdir, emit_test_config):
 
     job_folder = Path(workspace_dir).iterdir().__next__()
     assert Path(job_folder / "case" / "test").exists()
+
+
+def test_group_jobs(tmpdir, emit_test_config):
+    project = OpenFOAMProject.init_project(path=tmpdir)
+    variation = {
+        "variation": [{
+            "operation": "op1",
+            "schema": "path/{foo}",
+            "common": {"c1": "v1"},
+            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}]
+        }]
+    }
+    emit_test_config.update(variation)
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+    id_view_map = map_view_folder_to_job_id(os.path.join(project.path,"view"))
+    
+    project.run(names=["fetchCase"])
+    group = project.group_jobs(project.filter_jobs(filters=[]), id_view_map, 0)
+    non_base_jobs = [j.id for j in project.filter_jobs([]) if not j.statepoint.get("has_child")]
+    group_ids = set()
+    for job_g in group.values():
+        for j in job_g:
+            group_ids.add(j.id)
+    assert len(group) == 3
+    assert set(non_base_jobs) == group_ids

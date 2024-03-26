@@ -15,7 +15,11 @@ from typing import Union, Literal
 from datetime import datetime
 
 from .labels import owns_mesh, final, finished
-from ..core.core import execute_shell, GLOBAL_INIT_COUNT  # noqa
+from ..core.core import (
+    execute_shell,
+    GLOBAL_INIT_COUNT,
+    map_view_folder_to_job_id,
+)  # noqa
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
@@ -54,6 +58,23 @@ class OpenFOAMProject(flow.FlowProject):
         call
         """
         self._entrypoint = entrypoint
+
+    def group_jobs(self, jobs, view_id_map: dict[str, str], summarize: int = 0) -> dict[str, list[str]]:
+        """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
+        Returns a `dict[str, list[str]]` which maps the view path to a list of child jobs. 
+        """
+        group: dict[str, list] = dict()
+        for job in jobs:
+            jobid = job.id
+            p_view = view_id_map.get(jobid)
+            if not p_view:
+                continue
+            # "traverse" the view tree bottom up -> remove the last n parts
+            p_view = p_view.rsplit("/", summarize)[0]
+            if p_view not in group:
+                group[p_view] = []
+            group[p_view].append(job)
+        return group
 
 
 generate = OpenFOAMProject.make_group(name="generate")
